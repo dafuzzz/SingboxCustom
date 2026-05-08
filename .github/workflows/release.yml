@@ -64,10 +64,33 @@ jobs:
             -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' ${LDFLAGS_SHARED} -s -w -buildid=" \
             ./cmd/sing-box
 
+      # 生成与产物同名 + .sha256 的校验文件，格式遵循 GNU coreutils `sha256sum` 的 "<hash>  <filename>" 约定，
+      # 用户下载后可直接 `sha256sum -c <file>.sha256` 进行完整性校验。
+      # 同时把纯哈希值导出供下一步写入 Release 正文，保证 Release 页面与校验文件的真值一致。
+      - name: Compute SHA256 checksum
+        id: checksum
+        run: |
+          set -euo pipefail
+          sha256sum "${OUTPUT}" > "${OUTPUT}.sha256"
+          HASH=$(awk '{print $1}' "${OUTPUT}.sha256")
+          echo "hash=${HASH}" >> "$GITHUB_OUTPUT"
+          # 生成 Release 正文片段：附加在 generate_release_notes 自动生成的内容之后
+          {
+            echo "## SHA256 Checksums"
+            echo
+            echo '```'
+            cat "${OUTPUT}.sha256"
+            echo '```'
+          } > release_body.md
+
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.OUTPUT }}
+          files: |
+            ${{ env.OUTPUT }}
+            ${{ env.OUTPUT }}.sha256
           draft: false
           prerelease: ${{ steps.build.outputs.prerelease }}
           generate_release_notes: true
+          body_path: release_body.md
+          append_body: true
