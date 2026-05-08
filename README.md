@@ -1,39 +1,13 @@
-> Sponsored by [Warp](https://go.warp.dev/sing-box), built for coding with multiple AI agents
+# sing-box (custom fork)
 
-<a href="https://go.warp.dev/sing-box">
-<img alt="Warp sponsorship" width="400" src="https://github.com/warpdotdev/brand-assets/raw/refs/heads/main/Github/Sponsor/Warp-Github-LG-02.png">
-</a>
+本仓库是 [sing-box](https://github.com/SagerNet/sing-box) 的个人 fork。
 
----
+在上游基础上做了一些自定义改动；具体差异请直接查看本仓库的提交历史
+（`git log` 是真值源，避免 README 与实际代码不一致）。
 
-# sing-box
+发布范围已收敛：仅为 Linux x86_64 构建静态二进制并发布到 GitHub Releases，
+其它平台 / 包格式（DEB/RPM/Pacman/OpenWrt/Docker）/ 移动端客户端均不再维护。
 
-The universal proxy platform.
+上游文档：<https://sing-box.sagernet.org>
 
-[![Packaging status](https://repology.org/badge/vertical-allrepos/sing-box.svg)](https://repology.org/project/sing-box/versions)
 
-## Documentation
-
-https://sing-box.sagernet.org
-
-## License
-
-```
-Copyright (C) 2022 by nekohasekai <contact-sagernet@sekai.icu>
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-In addition, no derivative work may use the name or imply association
-with this application without prior consent.
-```

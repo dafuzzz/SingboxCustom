@@ -1,0 +1,73 @@
+name: Release
+
+# 仅为 Debian/Ubuntu 等 x86_64 Linux 构建一份纯 Go (CGO_ENABLED=0) 静态二进制
+# 并以原始可执行文件形式发布到 GitHub Releases。其它平台 / 包格式 / naive(cronet) 均不再支持。
+#
+# 构建标签集合的真值源：release/DEFAULT_BUILD_TAGS_OTHERS
+# 共享 ldflags 的真值源：release/LDFLAGS
+
+on:
+  push:
+    tags:
+      # 仅响应自定义前缀的 tag（如 custom-v1.13.0），避免同步 upstream 大量 v* tag 时触发不必要的发布构建
+      - 'custom-v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build linux/amd64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ~1.25.8
+
+      - name: Load build tags & ldflags
+        run: |
+          set -euo pipefail
+          echo "BUILD_TAGS=$(cat release/DEFAULT_BUILD_TAGS_OTHERS)" >> "$GITHUB_ENV"
+          echo "LDFLAGS_SHARED=$(cat release/LDFLAGS)" >> "$GITHUB_ENV"
+
+      - name: Build
+        id: build
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          set -euxo pipefail
+          # 从 custom-vX.Y.Z 形式的 tag 中剥离 "custom-v" 前缀，得到纯净的语义化版本号供产物命名与 -ldflags 注入
+          VERSION="${GITHUB_REF_NAME#custom-v}"
+          # 纯净版本号若仍含 "-"（如 1.13.0-beta.1）即判定为 prerelease，输出给后续发布步骤使用
+          # 不再用 github.ref_name 直接判定，因为 ref_name 自带的 "custom-v" 前缀里已经有 "-"，会误判
+          if [[ "${VERSION}" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          # 产物文件名内嵌 OS / ARCH，便于在 Releases 中区分不同平台构建
+          OUTPUT="sing-box-${VERSION}-${GOOS}-${GOARCH}"
+          echo "OUTPUT=${OUTPUT}" >> "$GITHUB_ENV"
+          go build -v -trimpath -o "${OUTPUT}" -tags "${BUILD_TAGS}" \
+            -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' ${LDFLAGS_SHARED} -s -w -buildid=" \
+            ./cmd/sing-box
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.OUTPUT }}
+          draft: false
+          prerelease: ${{ steps.build.outputs.prerelease }}
+          generate_release_notes: true
